@@ -127,15 +127,14 @@ BOOL CMainFrame::LoadImage(LPCTSTR lpFilename, LPCTSTR lpName)
 
         Image img;
         img.Load(lpFilename);
-        HBITMAP hBmp = img.ConvertToBitmap(m_view.GetBackground());
 
         statusBar.SetText(0, _T(""), SBT_NOBORDERS);
         SetCursor(OldCursor);
 
-        if (hBmp != NULL)
+        if (img.IsLoaded())
         {
             m_image = img;
-            m_view.SetBitmap(hBmp);
+            m_view.SetBitmap(img);
             m_view.ZoomToFit();
             UpdateTitleBar(lpName);
             lstrcpy(m_szFilePath, lpFilename);
@@ -347,7 +346,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT /*lpCreateStruct*/)
 
     m_hWndClient = m_view.Create(m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
     m_view.SetDlgCtrlID(0);
-    m_view.SetBitmap(NULL);
+    m_view.ClearBitmap();
     m_view.SetFocus();
 
     m_mru.SetMenuHandle(m_CmdBar.GetMenu().GetSubMenu(FILE_MENU_POSITION).GetSubMenu(RECENT_MENU_POSITION));
@@ -462,8 +461,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
             if (nFrame >= m_image.GetFrameCount())
                 nFrame = 0;
             m_image.SetFrame(nFrame);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-            m_view.SetBitmap(hBmp, false);
+            m_view.SetBitmap(m_image, false);
             UpdateStatusBar();
 
             UINT uFrameDelay = m_image.GetFrameDelay();
@@ -484,8 +482,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                 UINT nFrame = m_image.GetFrame();
                 m_image.Load(m_szFilePath);
                 m_image.SetFrame(nFrame);
-                HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-                m_view.SetBitmap(hBmp, false);
+                m_view.SetBitmap(m_image, false);
                 m_FileTime = ft;
                 UpdateStatusBar();
             }
@@ -668,10 +665,9 @@ void CMainFrame::OnEditPaste(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         {
             HPALETTE hPalette = NULL;
             m_image.CreateFrom(hBitmap, hPalette);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-            if (hBmp != NULL)
+            if (m_image.IsLoaded())
             {
-                m_view.SetBitmap(hBmp);
+                m_view.SetBitmap(m_image);
                 UpdateTitleBar(_T("(Clipboard)"));
                 m_szFilePath[0] = _T('\0');
                 m_FileTime = {};
@@ -703,7 +699,7 @@ void CMainFrame::OnEditClear(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 
     m_image.Clear();
     m_view.ZoomDefault();
-    m_view.SetBitmap(NULL);
+    m_view.ClearBitmap();
     UpdateTitleBar(NULL);
     m_szFilePath[0] = _T('\0');
     m_FileTime = {};
@@ -763,8 +759,7 @@ void CMainFrame::OnFrameNext(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         if ((nFrame + 1) < m_image.GetFrameCount())
         {
             m_image.SetFrame(nFrame + 1);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-            m_view.SetBitmap(hBmp, false);
+            m_view.SetBitmap(m_image, false);
             UpdateStatusBar();
         }
     }
@@ -783,8 +778,7 @@ void CMainFrame::OnFramePrev(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         if (nFrame > 0)
         {
             m_image.SetFrame(nFrame - 1);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-            m_view.SetBitmap(hBmp, false);
+            m_view.SetBitmap(m_image, false);
             UpdateStatusBar();
         }
     }
@@ -823,8 +817,7 @@ void CMainFrame::OnBackground(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/)
     UISetRadioMenuItem(nID, ID_BACKGROUND_BLACK, ID_BACKGROUND_CHECKERED);
     if (m_image.IsLoaded())
     {
-        HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-        m_view.SetBitmap(hBmp);
+        m_view.SetBitmap(m_image);
     }
 }
 
@@ -842,8 +835,7 @@ void CMainFrame::OnViewFlipRotate(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/
     UISetRadioMenuItem(nID, ID_VIEW_NORMAL, ID_VIEW_FLIPPEDVERTICALLY);
     if (m_image.IsLoaded())
     {
-        HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
-        m_view.SetBitmap(hBmp);
+        m_view.SetBitmap(m_image);
     }
 }
 

@@ -7,6 +7,8 @@
 #include <atlcrack.h>
 #include <atltypes.h>
 
+#include "Image.h"
+
 class CBitmapView : public CZoomScrollWindowImpl<CBitmapView>
 {
 public:
@@ -17,7 +19,8 @@ public:
     CBitmapView();
 
     BOOL PreTranslateMessage(MSG* pMsg);
-    void SetBitmap(HBITMAP hBitmap, bool bResetOffset = true);
+    void ClearBitmap(bool bResetOffset = true);
+    void SetBitmap(Image image, bool bResetOffset = true);
     const CBitmap& GetBitmap() const { return m_bmp; }
     void SetBackground(HBRUSH hBackground);
     const CBrush& GetBackground() const { return m_hBackground; }
@@ -43,6 +46,7 @@ private:
     END_MSG_MAP()
 
 private:
+    Image m_image;
     CBitmap m_bmp;
     CBrush m_hBackground;
     CPoint m_pointDrag;

@@ -19,12 +19,27 @@ BOOL CBitmapView::PreTranslateMessage(MSG* /*pMsg*/)
     return FALSE;
 }
 
-void CBitmapView::SetBitmap(HBITMAP hBitmap, bool bResetOffset)
+void CBitmapView::ClearBitmap(bool bResetOffset)
 {
+    m_image.Clear();
+
     if (!m_bmp.IsNull())
         m_bmp.DeleteObject();
 
-    m_bmp = hBitmap;
+    m_bmp = NULL;
+
+    SIZE size = { 1, 1 };
+    SetScrollSize(size, TRUE, bResetOffset);
+}
+
+void CBitmapView::SetBitmap(Image image, bool bResetOffset)
+{
+    m_image = image;
+
+    if (!m_bmp.IsNull())
+        m_bmp.DeleteObject();
+
+    m_bmp = m_image.ConvertToBitmap(m_hBackground);
 
     SIZE size;
     if (!m_bmp.IsNull())

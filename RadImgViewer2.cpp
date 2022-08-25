@@ -18,45 +18,45 @@ CAppModule _Module;
 
 int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {
-	CMessageLoop theLoop;
-	_Module.AddMessageLoop(&theLoop);
+    CMessageLoop theLoop;
+    _Module.AddMessageLoop(&theLoop);
 
-	CMainFrame wndMain;
-	if (wndMain.CreateEx() == NULL)
-	{
-		ATLTRACE(_T("Main window creation failed!\n"));
-		return 0;
-	}
+    CMainFrame wndMain;
+    if (wndMain.CreateEx() == NULL)
+    {
+        ATLTRACE(_T("Main window creation failed!\n"));
+        return 0;
+    }
 
-	for (int argn = 1; argn < __argc; ++argn)
-	{
-		TCHAR* arg = __wargv[argn];
-		wndMain.LoadImage(arg, NULL);
-	}
+    for (int argn = 1; argn < __argc; ++argn)
+    {
+        TCHAR* arg = __wargv[argn];
+        wndMain.LoadImage(arg, NULL);
+    }
 
-	wndMain.ShowWindow(nCmdShow);
+    wndMain.ShowWindow(nCmdShow);
 
-	int nRet = theLoop.Run();
+    int nRet = theLoop.Run();
 
-	_Module.RemoveMessageLoop();
-	return nRet;
+    _Module.RemoveMessageLoop();
+    return nRet;
 }
 
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow)
 {
-	INITCOMMONCONTROLSEX iccx;
-	iccx.dwSize = sizeof(iccx);
-	iccx.dwICC = ICC_COOL_CLASSES | ICC_BAR_CLASSES;
-	ATLVERIFY(::InitCommonControlsEx(&iccx));
+    INITCOMMONCONTROLSEX iccx;
+    iccx.dwSize = sizeof(iccx);
+    iccx.dwICC = ICC_COOL_CLASSES | ICC_BAR_CLASSES;
+    ATLVERIFY(::InitCommonControlsEx(&iccx));
 
-	ATLVERIFY(SUCCEEDED(_Module.Init(NULL, hInstance)));
+    ATLVERIFY(SUCCEEDED(_Module.Init(NULL, hInstance)));
 
-	ATLVERIFY(SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED)));
+    ATLVERIFY(SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED)));
 
-	int nRet = Run(lpstrCmdLine, nCmdShow);
+    int nRet = Run(lpstrCmdLine, nCmdShow);
 
-	CoUninitialize();
+    CoUninitialize();
 
-	_Module.Term();
-	return nRet;
+    _Module.Term();
+    return nRet;
 }

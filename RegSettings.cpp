@@ -25,7 +25,7 @@ CWindowSettings::CWindowSettings()
     m_WindowPlacement.ptMinPosition.y=0;
     m_WindowPlacement.ptMaxPosition.x=0;
     m_WindowPlacement.ptMaxPosition.y=0;
-    
+
     CRect rc;
     SystemParametersInfo(SPI_GETWORKAREA, 0, rc, 0);
     rc.DeflateRect(100,100);
@@ -74,9 +74,9 @@ void CWindowSettings::ApplyTo(CWindow& Wnd, int nCmdShow/* = SW_SHOWNORMAL*/)con
     ATLASSERT(Wnd.IsWindow());
 
     Wnd.SetWindowPlacement(&m_WindowPlacement);
-    
-    if(SW_SHOWNORMAL != nCmdShow)	
-        Wnd.ShowWindow(nCmdShow);		
+
+    if(SW_SHOWNORMAL != nCmdShow)
+        Wnd.ShowWindow(nCmdShow);
     else
     if(m_WindowPlacement.showCmd == SW_MINIMIZE || m_WindowPlacement.showCmd == SW_SHOWMINIMIZED)
         Wnd.ShowWindow(SW_SHOWNORMAL);

@@ -41,7 +41,7 @@ CComPtr<IWICFormatConverter> operator|(IWICBitmapSource* pISource, const FormatC
         pISource,                          // Source frame to convert
         fc.dstFormat,     // The desired pixel format
         fc.dither,         // The desired dither pattern
-        fc.pIPalette,                            // The desired palette 
+        fc.pIPalette,                            // The desired palette
         fc.alphaThresholdPercent,                            // The desired alpha threshold
         fc.paletteTranslate       // Palette translation type
     ));
@@ -196,7 +196,7 @@ void Image::Load(LPCTSTR lpFilename)
         // Copy so it releases the decoder and therefore releases the file handle
         CComPtr<IWICBitmap> pBitmap;
         IfFailedThrowHR(pFactory->CreateBitmapFromSource(pFrame, WICBitmapCacheOnLoad, &pBitmap));
-        
+
         m_pBitmap.emplace_back(pBitmap);
         m_delay.push_back(uFrameDelay);
     }

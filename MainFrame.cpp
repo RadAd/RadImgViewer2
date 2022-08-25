@@ -63,7 +63,7 @@ LPCTSTR g_lpcstrRegToolBar = _T("ToolBar");
 LPCTSTR g_lpcstrRegStatusBar = _T("StatusBar");
 LPCTSTR g_lpcstrRegBackground = _T("Background");
 
-CMainFrame::CMainFrame() : m_bPrintPreview(false), m_bMsgHandled(false), m_hBackground(NULL), m_FileTime({})
+CMainFrame::CMainFrame() : m_bPrintPreview(false), m_bMsgHandled(false), m_FileTime({})
 {
     ::SetRect(&m_rcMargin, 1000, 1000, 1000, 1000);
     m_printer.OpenDefaultPrinter();
@@ -127,7 +127,7 @@ BOOL CMainFrame::LoadImage(LPCTSTR lpFilename, LPCTSTR lpName)
 
         Image img;
         img.Load(lpFilename);
-        HBITMAP hBmp = img.ConvertToBitmap(m_hBackground);
+        HBITMAP hBmp = img.ConvertToBitmap(m_view.GetBackground());
 
         statusBar.SetText(0, _T(""), SBT_NOBORDERS);
         SetCursor(OldCursor);
@@ -411,14 +411,15 @@ void CMainFrame::OnClose()
     if (reg.Create(HKEY_CURRENT_USER, g_lpcstrMRURegKey) == ERROR_SUCCESS)
     {
         ATLVERIFY(reg.SetDWORDValue(g_lpcstrRegStatusBar, ::IsWindowVisible(m_hWndStatusBar)) == ERROR_SUCCESS);
+        const HBRUSH hBackground = m_view.GetBackground();
         DWORD dwBackground = 0;
-        if (m_hBackground == (HBRUSH) GetStockObject(BLACK_BRUSH))
+        if (hBackground == (HBRUSH) GetStockObject(BLACK_BRUSH))
             dwBackground = 0;
-        else if (m_hBackground == (HBRUSH) GetStockObject(WHITE_BRUSH))
+        else if (hBackground == (HBRUSH) GetStockObject(WHITE_BRUSH))
             dwBackground = 1;
-        else if (m_hBackground == (HBRUSH) GetStockObject(GRAY_BRUSH))
+        else if (hBackground == (HBRUSH) GetStockObject(GRAY_BRUSH))
             dwBackground = 2;
-        else // if (m_hBackground == (HBRUSH) GetStockObject(WHITE_BRUSH)) // TODO
+        else // if (hBackground == (HBRUSH) GetStockObject(WHITE_BRUSH)) // TODO
             dwBackground = 3;
         ATLVERIFY(reg.SetDWORDValue(g_lpcstrRegBackground, dwBackground) == ERROR_SUCCESS);
     }
@@ -461,7 +462,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
             if (nFrame >= m_image.GetFrameCount())
                 nFrame = 0;
             m_image.SetFrame(nFrame);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
             m_view.SetBitmap(hBmp, false);
             UpdateStatusBar();
 
@@ -483,7 +484,7 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
                 UINT nFrame = m_image.GetFrame();
                 m_image.Load(m_szFilePath);
                 m_image.SetFrame(nFrame);
-                HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+                HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
                 m_view.SetBitmap(hBmp, false);
                 m_FileTime = ft;
                 UpdateStatusBar();
@@ -667,7 +668,7 @@ void CMainFrame::OnEditPaste(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         {
             HPALETTE hPalette = NULL;
             m_image.CreateFrom(hBitmap, hPalette);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
             if (hBmp != NULL)
             {
                 m_view.SetBitmap(hBmp);
@@ -762,7 +763,7 @@ void CMainFrame::OnFrameNext(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         if ((nFrame + 1) < m_image.GetFrameCount())
         {
             m_image.SetFrame(nFrame + 1);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
             m_view.SetBitmap(hBmp, false);
             UpdateStatusBar();
         }
@@ -782,7 +783,7 @@ void CMainFrame::OnFramePrev(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         if (nFrame > 0)
         {
             m_image.SetFrame(nFrame - 1);
-            HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+            HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
             m_view.SetBitmap(hBmp, false);
             UpdateStatusBar();
         }
@@ -793,9 +794,9 @@ void CMainFrame::OnBackground(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/)
 {
     switch (nID)
     {
-    case ID_BACKGROUND_BLACK: m_hBackground = (HBRUSH) GetStockObject(BLACK_BRUSH); break;
-    case ID_BACKGROUND_WHITE: m_hBackground = (HBRUSH) GetStockObject(WHITE_BRUSH); break;
-    case ID_BACKGROUND_GRAY: m_hBackground = (HBRUSH) GetStockObject(GRAY_BRUSH); break;
+    case ID_BACKGROUND_BLACK: m_view.SetBackground((HBRUSH) GetStockObject(BLACK_BRUSH)); break;
+    case ID_BACKGROUND_WHITE: m_view.SetBackground((HBRUSH) GetStockObject(WHITE_BRUSH)); break;
+    case ID_BACKGROUND_GRAY: m_view.SetBackground((HBRUSH) GetStockObject(GRAY_BRUSH)); break;
     case ID_BACKGROUND_CHECKERED:
         {
             CRect r(0, 0, 10, 10);
@@ -815,14 +816,14 @@ void CMainFrame::OnBackground(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/)
                 }
             }
             hMemDC.SelectBitmap(hOrgBMP);
-            m_hBackground = CreatePatternBrush(hMemBmp);
+            m_view.SetBackground(CreatePatternBrush(hMemBmp));
         }
         break;
     }
     UISetRadioMenuItem(nID, ID_BACKGROUND_BLACK, ID_BACKGROUND_CHECKERED);
     if (m_image.IsLoaded())
     {
-        HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+        HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
         m_view.SetBitmap(hBmp);
     }
 }
@@ -841,7 +842,7 @@ void CMainFrame::OnViewFlipRotate(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/
     UISetRadioMenuItem(nID, ID_VIEW_NORMAL, ID_VIEW_FLIPPEDVERTICALLY);
     if (m_image.IsLoaded())
     {
-        HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+        HBITMAP hBmp = m_image.ConvertToBitmap(m_view.GetBackground());
         m_view.SetBitmap(hBmp);
     }
 }

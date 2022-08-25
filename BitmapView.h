@@ -19,6 +19,8 @@ public:
     BOOL PreTranslateMessage(MSG* pMsg);
     void SetBitmap(HBITMAP hBitmap, bool bResetOffset = true);
     const CBitmap& GetBitmap() const { return m_bmp; }
+    void SetBackground(HBRUSH hBackground);
+    const CBrush& GetBackground() const { return m_hBackground; }
 
     void ZoomToFit();
 private:
@@ -42,6 +44,7 @@ private:
 
 private:
     CBitmap m_bmp;
+    CBrush m_hBackground;
     CPoint m_pointDrag;
     bool m_bPanning;
 

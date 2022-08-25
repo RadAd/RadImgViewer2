@@ -38,6 +38,19 @@ void CBitmapView::SetBitmap(HBITMAP hBitmap, bool bResetOffset)
     //EnableWindow(!m_bmp.IsNull());
 }
 
+void CBitmapView::SetBackground(HBRUSH hBackground)
+{
+    m_hBackground = hBackground;
+    // TODO Redo the img to bitmap
+#if 0
+    if (m_image.IsLoaded())
+    {
+        HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
+        m_view.SetBitmap(hBmp);
+    }
+#endif
+}
+
 void CBitmapView::ZoomToFit()
 {
     CRect r;

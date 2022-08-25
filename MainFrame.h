@@ -115,7 +115,6 @@ private:
     CCommandBarCtrl m_CmdBar;
     CRecentDocumentList m_mru;
     CBitmapView m_view;
-    HBRUSH m_hBackground;
 
     TCHAR m_szFilePath[MAX_PATH];
     FILETIME m_FileTime;

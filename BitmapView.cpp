@@ -26,44 +26,48 @@ void CBitmapView::ClearBitmap(bool bResetOffset)
     if (!m_bmp.IsNull())
         m_bmp.DeleteObject();
 
-    m_bmp = NULL;
-
-    SIZE size = { 1, 1 };
-    SetScrollSize(size, TRUE, bResetOffset);
+    UpdateScrollSize(bResetOffset);
 }
 
 void CBitmapView::SetBitmap(Image image, bool bResetOffset)
 {
     m_image = image;
 
-    if (!m_bmp.IsNull())
+    if (m_image.IsLoaded())
+        m_bmp = m_image.ConvertToBitmap(m_hBackground);
+    else if (!m_bmp.IsNull())
         m_bmp.DeleteObject();
 
-    m_bmp = m_image.ConvertToBitmap(m_hBackground);
-
-    SIZE size;
-    if (!m_bmp.IsNull())
-        m_bmp.GetSize(size);
-    else
-        size.cx = size.cy = 1;
-
-    //SetScrollOffset(0, 0, FALSE);
-    SetScrollSize(size, TRUE, bResetOffset);
-    //ZoomDefault();
-    //EnableWindow(!m_bmp.IsNull());
+    UpdateScrollSize(bResetOffset);
 }
 
 void CBitmapView::SetBackground(HBRUSH hBackground)
 {
     m_hBackground = hBackground;
-    // TODO Redo the img to bitmap
-#if 0
     if (m_image.IsLoaded())
     {
-        HBITMAP hBmp = m_image.ConvertToBitmap(m_hBackground);
-        m_view.SetBitmap(hBmp);
+        m_bmp = m_image.ConvertToBitmap(m_hBackground);
+        InvalidateRect(nullptr, FALSE);
     }
-#endif
+}
+
+void CBitmapView::SetFrame(UINT nFrame)
+{
+    m_image.SetFrame(nFrame);
+    // TODO Update scroll size?
+    InvalidateRect(nullptr, FALSE);
+}
+
+void CBitmapView::SetFlipRotate(WICBitmapTransformOptions FlipRotate)
+{
+    m_image.m_FlipRotate = FlipRotate;
+
+    if (m_image.IsLoaded())
+        m_bmp = m_image.ConvertToBitmap(m_hBackground);
+    else if (!m_bmp.IsNull())
+        m_bmp.DeleteObject();
+
+    UpdateScrollSize(true);
 }
 
 void CBitmapView::ZoomToFit()
@@ -80,6 +84,20 @@ void CBitmapView::InvalidateCursor()
     POINT pt; // Screen coordinates!
     GetCursorPos(&pt);
     SetCursorPos(pt.x, pt.y);
+}
+
+void CBitmapView::UpdateScrollSize(bool bResetOffset)
+{
+    SIZE size;
+    if (!m_bmp.IsNull())
+        m_bmp.GetSize(size);
+    else
+        size.cx = size.cy = 1;
+
+    //SetScrollOffset(0, 0, FALSE);
+    SetScrollSize(size, TRUE, bResetOffset);
+    //ZoomDefault();
+    //EnableWindow(!m_bmp.IsNull());
 }
 
 BOOL CBitmapView::OnEraseBackground(CDCHandle dc)

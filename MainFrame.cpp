@@ -87,7 +87,7 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
 
 BOOL CMainFrame::OnIdle()
 {
-    BOOL bEnable = m_image.IsLoaded();
+    BOOL bEnable = m_view.GetImage().IsLoaded();
     UIEnable(ID_FILE_PRINT, bEnable);
     UIEnable(ID_FILE_PRINT_PREVIEW, bEnable);
     UISetCheck(ID_FILE_PRINT_PREVIEW, m_bPrintPreview);
@@ -98,8 +98,8 @@ BOOL CMainFrame::OnIdle()
     UIEnable(ID_ZOOM_OUT, bEnable && !m_bPrintPreview);
     UIEnable(ID_ZOOM_DEFAULT, bEnable && !m_bPrintPreview);
     UIEnable(ID_ZOOM_TOFIT, bEnable && !m_bPrintPreview);
-    UIEnable(ID_FRAME_NEXT, bEnable && (m_image.GetFrame() + 1) < m_image.GetFrameCount());
-    UIEnable(ID_FRAME_PREV, bEnable && m_image.GetFrame() > 0);
+    UIEnable(ID_FRAME_NEXT, bEnable && (m_view.GetImage().GetFrame() + 1) < m_view.GetImage().GetFrameCount());
+    UIEnable(ID_FRAME_PREV, bEnable && m_view.GetImage().GetFrame() > 0);
     UIEnable(ID_VIEW_PROPERTIES, bEnable);
     UIUpdateToolBar();
 
@@ -133,7 +133,6 @@ BOOL CMainFrame::LoadImage(LPCTSTR lpFilename, LPCTSTR lpName)
 
         if (img.IsLoaded())
         {
-            m_image = img;
             m_view.SetBitmap(img);
             m_view.ZoomToFit();
             UpdateTitleBar(lpName);
@@ -142,7 +141,7 @@ BOOL CMainFrame::LoadImage(LPCTSTR lpFilename, LPCTSTR lpName)
             UpdateStatusBar();
 
             SetTimer(TIMER_RELOAD, 100);
-            UINT uFrameDelay = m_image.GetFrameDelay();
+            UINT uFrameDelay = m_view.GetImage().GetFrameDelay();
             if (uFrameDelay > 0)
                 SetTimer(TIMER_PLAY, uFrameDelay);
             else
@@ -173,8 +172,8 @@ void CMainFrame::TogglePrintPreview()
     if (m_bPrintPreview)	// close it
     {
         SetTimer(TIMER_RELOAD, 100);
-        m_image.SetFrame(m_wndPreview.m_nCurPage);
-        UINT uFrameDelay = m_image.GetFrameDelay();
+        m_view.SetFrame(m_wndPreview.m_nCurPage);
+        UINT uFrameDelay = m_view.GetImage().GetFrameDelay();
         if (uFrameDelay > 0)
             SetTimer(TIMER_PLAY, uFrameDelay);
         else
@@ -193,8 +192,8 @@ void CMainFrame::TogglePrintPreview()
 
         ATLASSERT(m_hWndClient == m_view.m_hWnd);
 
-        m_wndPreview.SetPrintPreviewInfo(m_printer, m_devmode.m_pDevMode, this, 0, m_image.GetFrameCount() - 1);
-        m_wndPreview.SetPage(m_image.GetFrame());
+        m_wndPreview.SetPrintPreviewInfo(m_printer, m_devmode.m_pDevMode, this, 0, m_view.GetImage().GetFrameCount() - 1);
+        m_wndPreview.SetPage(m_view.GetImage().GetFrame());
 
         m_wndPreview.Create(m_hWnd, rcDefault, NULL, 0, WS_EX_CLIENTEDGE);
         m_view.ShowWindow(SW_HIDE);
@@ -245,19 +244,19 @@ void CMainFrame::UpdateStatusBar()
 {
     TCHAR szBuff[100];
     CStatusBarCtrl statusBar(m_hWndStatusBar);
-    if (!m_image.IsLoaded())
+    if (!m_view.GetImage().IsLoaded())
     {
         statusBar.SetText(1, _T(""));
         statusBar.SetText(2, _T(""));
     }
     else
     {
-        const UINT frameCount = m_image.GetFrameCount();
-        const Image::Size size = m_image.GetFrameSize();
-        const WICPixelFormatGUID pixelFormat = m_image.GetFramePixelFormat();
+        const UINT frameCount = m_view.GetImage().GetFrameCount();
+        const Image::Size size = m_view.GetImage().GetFrameSize();
+        const WICPixelFormatGUID pixelFormat = m_view.GetImage().GetFramePixelFormat();
         const UINT nBitsPixel = GetBitsPerPixel(pixelFormat);
 
-        swprintf(szBuff, ARRAYSIZE(szBuff), _T("%d/%d"), (m_bPrintPreview ? m_wndPreview.m_nCurPage : m_image.GetFrame()) + 1, frameCount);
+        swprintf(szBuff, ARRAYSIZE(szBuff), _T("%d/%d"), (m_bPrintPreview ? m_wndPreview.m_nCurPage : m_view.GetImage().GetFrame()) + 1, frameCount);
         statusBar.SetText(1, szBuff);
 
         swprintf(szBuff, ARRAYSIZE(szBuff), _T("%d x %d x %d"), size.nWidth, size.nHeight, nBitsPixel);
@@ -271,12 +270,12 @@ void CMainFrame::UpdateStatusBar()
 
 bool CMainFrame::IsValidPage(UINT nPage)
 {
-    return (nPage >= 0 && nPage < m_image.GetFrameCount());
+    return (nPage >= 0 && nPage < m_view.GetImage().GetFrameCount());
 }
 
 bool CMainFrame::PrintPage(UINT nPage, HDC hDC)
 {
-    ATLASSERT(m_image.IsLoaded());
+    ATLASSERT(m_view.GetImage().IsLoaded());
 
     const float mmscalex = ::GetDeviceCaps(hDC, PHYSICALWIDTH) / (::GetDeviceCaps(hDC, HORZSIZE) * 100.0f);
     const float mmscaley = ::GetDeviceCaps(hDC, PHYSICALHEIGHT) / (::GetDeviceCaps(hDC, VERTSIZE) * 100.0f);
@@ -294,8 +293,8 @@ bool CMainFrame::PrintPage(UINT nPage, HDC hDC)
         ::GetDeviceCaps(hDC, PHYSICALHEIGHT) - std::max(::GetDeviceCaps(hDC, PHYSICALOFFSETY), (int) rcMargin.bottom)
     };
 
-    m_image.SetFrame(nPage);
-    const Image::Size size = m_image.GetFrameSize();
+    m_view.SetFrame(nPage);
+    const Image::Size size = m_view.GetImage().GetFrameSize();
 
     // calc scaling factor, so that bitmap is not too small
     const float nScaleX = (float) rcPage.Width() / size.nWidth;
@@ -311,7 +310,7 @@ bool CMainFrame::PrintPage(UINT nPage, HDC hDC)
 
     CDCHandle dc = hDC;
     //dc.Rectangle(&rcPage);
-    m_image.RenderFrame(dc, xOff, yOff, cxBlt, cyBlt);
+    m_view.GetImage().RenderFrame(dc, xOff, yOff, cxBlt, cyBlt);
 
     return true;
 }
@@ -429,7 +428,6 @@ void CMainFrame::OnDestroy()
     RemoveClipboardFormatListener(*this);
     //SetMsgHandled(FALSE); // Default handler calls PostQuitMessage(1);
 
-    m_image.Clear();
     PostQuitMessage(0);
 }
 
@@ -454,17 +452,16 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
     {
     case TIMER_PLAY:
     {
-        if (m_image.IsLoaded())
+        if (m_view.GetImage().IsLoaded())
         {
-            UINT nFrame = m_image.GetFrame();
+            UINT nFrame = m_view.GetImage().GetFrame();
             ++nFrame;
-            if (nFrame >= m_image.GetFrameCount())
+            if (nFrame >= m_view.GetImage().GetFrameCount())
                 nFrame = 0;
-            m_image.SetFrame(nFrame);
-            m_view.SetBitmap(m_image, false);
+            m_view.SetFrame(nFrame);
             UpdateStatusBar();
 
-            UINT uFrameDelay = m_image.GetFrameDelay();
+            UINT uFrameDelay = m_view.GetImage().GetFrameDelay();
             if (uFrameDelay > 0)
                 SetTimer(TIMER_PLAY, uFrameDelay);
             else
@@ -479,10 +476,11 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
             FILETIME ft = GetFileWriteTime(m_szFilePath);
             if (CompareFileTime(&ft, &m_FileTime) != 0)
             {
-                UINT nFrame = m_image.GetFrame();
-                m_image.Load(m_szFilePath);
-                m_image.SetFrame(nFrame);
-                m_view.SetBitmap(m_image, false);
+                UINT nFrame = m_view.GetImage().GetFrame();
+                Image image;
+                image.Load(m_szFilePath);
+                image.SetFrame(nFrame);
+                m_view.SetBitmap(image);
                 m_FileTime = ft;
                 UpdateStatusBar();
             }
@@ -506,7 +504,7 @@ void CMainFrame::OnDropFiles(HDROP hDropInfo)
 
 LRESULT CMainFrame::OnClipboardUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-    if (!m_bPrintPreview && m_szFilePath[0] == _T('\0') && m_image.IsLoaded() && ::IsClipboardFormatAvailable(CF_BITMAP))
+    if (!m_bPrintPreview && m_szFilePath[0] == _T('\0') && m_view.GetImage().IsLoaded() && ::IsClipboardFormatAvailable(CF_BITMAP))
         OnEditPaste(0, 0, *this);
     return 0;
 }
@@ -582,8 +580,8 @@ void CMainFrame::OnFilePrint(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
     dlg.m_pd.hDevMode = m_devmode.CopyToHDEVMODE();
     dlg.m_pd.hDevNames = m_printer.CopyToHDEVNAMES();
     dlg.m_pd.nMinPage = 1;
-    dlg.m_pd.nMaxPage = (WORD) m_image.GetFrameCount();
-    dlg.m_pd.nFromPage = (WORD) m_image.GetFrame() + 1;
+    dlg.m_pd.nMaxPage = (WORD) m_view.GetImage().GetFrameCount();
+    dlg.m_pd.nFromPage = (WORD) m_view.GetImage().GetFrame() + 1;
     dlg.m_pd.nToPage = dlg.m_pd.nFromPage;
 
     if (dlg.DoModal() == IDOK)
@@ -600,7 +598,7 @@ void CMainFrame::OnFilePrint(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
     ::GlobalFree(dlg.m_pd.hDevNames);
 
     SetTimer(TIMER_RELOAD, 100);
-    UINT uFrameDelay = m_image.GetFrameDelay();
+    UINT uFrameDelay = m_view.GetImage().GetFrameDelay();
     if (uFrameDelay > 0)
         SetTimer(TIMER_PLAY, uFrameDelay);
     else
@@ -638,7 +636,7 @@ void CMainFrame::OnEditCopy(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     if (::OpenClipboard(NULL))
     {
-        HBITMAP hBitmapCopy = (HBITMAP)::CopyImage(m_view.GetBitmap(), IMAGE_BITMAP, 0, 0, 0);
+        HBITMAP hBitmapCopy = m_view.CreateBitmap();
         if (hBitmapCopy != NULL)
             ::SetClipboardData(CF_BITMAP, hBitmapCopy);
         else
@@ -664,10 +662,11 @@ void CMainFrame::OnEditPaste(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         if (hBitmap != NULL)
         {
             HPALETTE hPalette = NULL;
-            m_image.CreateFrom(hBitmap, hPalette);
-            if (m_image.IsLoaded())
+            Image image;
+            image.CreateFrom(hBitmap, hPalette);
+            if (image.IsLoaded())
             {
-                m_view.SetBitmap(m_image);
+                m_view.SetBitmap(image);
                 UpdateTitleBar(_T("(Clipboard)"));
                 m_szFilePath[0] = _T('\0');
                 m_FileTime = {};
@@ -677,7 +676,7 @@ void CMainFrame::OnEditPaste(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
             }
             else
             {
-                m_image.Clear();
+                m_view.ClearBitmap();
                 MessageError(_T("Can't paste bitmap"));
             }
         }
@@ -697,7 +696,7 @@ void CMainFrame::OnEditClear(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
     if (m_bPrintPreview)
         TogglePrintPreview();
 
-    m_image.Clear();
+    m_view.ClearBitmap();
     m_view.ZoomDefault();
     m_view.ClearBitmap();
     UpdateTitleBar(NULL);
@@ -729,21 +728,25 @@ void CMainFrame::OnViewStatusBar(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wn
 void CMainFrame::OnZoomIn(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     m_view.ZoomIn();
+    m_view.NotifyParentZoomChanged();
 }
 
 void CMainFrame::OnZoomOut(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     m_view.ZoomOut();
+    m_view.NotifyParentZoomChanged();
 }
 
 void CMainFrame::OnZoomDefault(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     m_view.ZoomDefault();
+    m_view.NotifyParentZoomChanged();
 }
 
 void CMainFrame::OnZoomToFit(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     m_view.ZoomToFit();
+    m_view.NotifyParentZoomChanged();
 }
 
 void CMainFrame::OnFrameNext(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
@@ -755,11 +758,10 @@ void CMainFrame::OnFrameNext(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
     }
     else
     {
-        const UINT nFrame = m_image.GetFrame();
-        if ((nFrame + 1) < m_image.GetFrameCount())
+        const UINT nFrame = m_view.GetImage().GetFrame();
+        if ((nFrame + 1) < m_view.GetImage().GetFrameCount())
         {
-            m_image.SetFrame(nFrame + 1);
-            m_view.SetBitmap(m_image, false);
+            m_view.SetFrame(nFrame + 1);
             UpdateStatusBar();
         }
     }
@@ -774,11 +776,10 @@ void CMainFrame::OnFramePrev(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
     }
     else
     {
-        const UINT nFrame = m_image.GetFrame();
+        const UINT nFrame = m_view.GetImage().GetFrame();
         if (nFrame > 0)
         {
-            m_image.SetFrame(nFrame - 1);
-            m_view.SetBitmap(m_image, false);
+            m_view.SetFrame(nFrame - 1);
             UpdateStatusBar();
         }
     }
@@ -815,34 +816,28 @@ void CMainFrame::OnBackground(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/)
         break;
     }
     UISetRadioMenuItem(nID, ID_BACKGROUND_BLACK, ID_BACKGROUND_CHECKERED);
-    if (m_image.IsLoaded())
-    {
-        m_view.SetBitmap(m_image);
-    }
 }
 
 void CMainFrame::OnViewFlipRotate(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/)
 {
+    WICBitmapTransformOptions FlipRotate = WICBitmapTransformRotate0;
     switch (nID)
     {
-    case ID_VIEW_NORMAL: m_image.m_FlipRotate = WICBitmapTransformRotate0; break;
-    case ID_VIEW_ROTATE90: m_image.m_FlipRotate = WICBitmapTransformRotate90; break;
-    case ID_VIEW_ROTATE180: m_image.m_FlipRotate = WICBitmapTransformRotate180; break;
-    case ID_VIEW_ROTATE270: m_image.m_FlipRotate = WICBitmapTransformRotate270; break;
-    case ID_VIEW_FLIPPEDHORIZONTALLY: m_image.m_FlipRotate = WICBitmapTransformFlipHorizontal; break;
-    case ID_VIEW_FLIPPEDVERTICALLY: m_image.m_FlipRotate = WICBitmapTransformFlipVertical; break;
+    case ID_VIEW_NORMAL: FlipRotate = WICBitmapTransformRotate0; break;
+    case ID_VIEW_ROTATE90: FlipRotate = WICBitmapTransformRotate90; break;
+    case ID_VIEW_ROTATE180: FlipRotate = WICBitmapTransformRotate180; break;
+    case ID_VIEW_ROTATE270: FlipRotate = WICBitmapTransformRotate270; break;
+    case ID_VIEW_FLIPPEDHORIZONTALLY: FlipRotate = WICBitmapTransformFlipHorizontal; break;
+    case ID_VIEW_FLIPPEDVERTICALLY: FlipRotate = WICBitmapTransformFlipVertical; break;
     }
     UISetRadioMenuItem(nID, ID_VIEW_NORMAL, ID_VIEW_FLIPPEDVERTICALLY);
-    if (m_image.IsLoaded())
-    {
-        m_view.SetBitmap(m_image);
-    }
+    m_view.SetFlipRotate(FlipRotate);
 }
 
 void CMainFrame::OnViewProperties(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     CImageProperties prop;
-    prop.SetFileInfo(m_szFilePath, m_image);
+    prop.SetFileInfo(m_szFilePath, m_view.GetImage());
     prop.DoModal();
 }
 

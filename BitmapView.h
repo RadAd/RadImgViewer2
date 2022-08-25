@@ -21,9 +21,13 @@ public:
     BOOL PreTranslateMessage(MSG* pMsg);
     void ClearBitmap(bool bResetOffset = true);
     void SetBitmap(Image image, bool bResetOffset = true);
-    const CBitmap& GetBitmap() const { return m_bmp; }
+    const Image& GetImage() const { return m_image; }
     void SetBackground(HBRUSH hBackground);
     const CBrush& GetBackground() const { return m_hBackground; }
+
+    void SetFrame(UINT nFrame);
+    void SetFlipRotate(WICBitmapTransformOptions FlipRotate);
+    HBITMAP CreateBitmap() const { return m_image.ConvertToBitmap(m_hBackground); }
 
     void ZoomToFit();
 private:
@@ -31,6 +35,7 @@ private:
 
     bool AdjustScrollOffset(int& x, int& y);
     void InvalidateCursor();
+    void UpdateScrollSize(bool bResetOffset);
 
     BEGIN_MSG_MAP(CBitmapView)
         MSG_WM_ERASEBKGND(OnEraseBackground)

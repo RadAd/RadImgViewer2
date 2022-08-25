@@ -11,7 +11,6 @@
 #include <atlprint.h>
 
 #include "BitmapView.h"
-#include "Image.h"
 
 #include "resource.h"
 
@@ -118,7 +117,6 @@ private:
 
     TCHAR m_szFilePath[MAX_PATH];
     FILETIME m_FileTime;
-    Image m_image;
 
     // printing support
     CPrinter m_printer;

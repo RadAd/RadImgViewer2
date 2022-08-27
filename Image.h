@@ -40,8 +40,8 @@ public:
     BOOL FrameHasAlpha() const;
     UINT GetFrameDelay() const { return m_delay[m_nFrame]; }
 
-    void RenderFrame(HDC hDC, UINT x, UINT y, UINT cx, UINT cy) const;
-    HBITMAP ConvertToBitmap(HBRUSH hBackground) const;
+    void RenderFrame(HDC hDC, int x, int y, int cx, int cy, HBRUSH hBackground) const;
+    HBITMAP ConvertToBitmap(HDC hDC, HBRUSH hBackground) const;
 
     WICBitmapTransformOptions m_FlipRotate = WICBitmapTransformRotate0;
 

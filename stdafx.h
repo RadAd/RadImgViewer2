@@ -7,7 +7,7 @@
 #define __STDAFX_H__
 
 // Change these values to use different versions
-#define WINVER			0x0600
+#define WINVER			0x0605
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

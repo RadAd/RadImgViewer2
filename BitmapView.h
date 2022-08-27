@@ -27,7 +27,7 @@ public:
 
     void SetFrame(UINT nFrame);
     void SetFlipRotate(WICBitmapTransformOptions FlipRotate);
-    HBITMAP CreateBitmap() const { return m_image.ConvertToBitmap(m_hBackground); }
+    HBITMAP CreateBitmap(HDC hDC) const { return m_image.ConvertToBitmap(hDC, m_hBackground); }
 
     void ZoomToFit();
 private:
@@ -52,7 +52,6 @@ private:
 
 private:
     Image m_image;
-    CBitmap m_bmp;
     CBrush m_hBackground;
     CPoint m_pointDrag;
     bool m_bPanning;

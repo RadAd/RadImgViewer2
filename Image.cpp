@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "Image.h"
+#include "Utils.h"
 
 #include <atlstr.h>
 
@@ -261,21 +262,31 @@ BOOL Image::FrameHasAlpha() const
         || (GUID_WICPixelFormat32bppRGBA1010102XR == pixelFormat);
 }
 
-void Image::RenderFrame(HDC hDC, UINT x, UINT y, UINT cx, UINT cy) const
+void Image::RenderFrame(HDC hDC, int x, int y, int cx, int cy, HBRUSH hBackground) const
 {
+    const BOOL bAlpha = FrameHasAlpha();
+
+    // TODO Look into this further
+    // SetDIBitsToDevice seems to expect DevicePoints (DP)
+    // while AlphaBlend seems to expect LogicalPoints (LP)
+    POINT p[] = { {},  { (LONG) x, (LONG) y }, { (LONG) cx, (LONG) cy } };
+    LPtoDP(hDC, p, ARRAYSIZE(p));
+    GetViewportOrgEx(hDC, p);
+    if (!bAlpha)
+    {
+        x = p[1].x - p[0].x;
+        y = p[1].y - p[0].y;
+        cx = p[2].x - p[0].x;
+        cy = p[2].y - p[0].y;
+    }
+
     CComPtr<IWICImagingFactory> pFactory;
     IfFailedThrowHR(pFactory.CoCreateInstance(CLSID_WICImagingFactory))
 
-    const BOOL bAlpha = FrameHasAlpha();
-
     CComPtr<IWICBitmapSource> pBitmap = m_pBitmap[m_nFrame]
-        | FormatConverter({ pFactory, bAlpha ? GUID_WICPixelFormat32bppPBGRA : GUID_WICPixelFormat32bppBGR })
+        | FormatConverter({ pFactory, bAlpha ? GUID_WICPixelFormat32bppPRGBA : GUID_WICPixelFormat32bppRGB })
         | FlipRotator({ pFactory, m_FlipRotate })
-        | Scaler({ pFactory, cx, cy, WICBitmapInterpolationModeNearestNeighbor });
-
-    HDC hdcScreen = GetDC(NULL);
-    if (!hdcScreen)
-        throw CAtlException(1);
+        | Scaler({ pFactory, (UINT) cx, (UINT) cy, WICBitmapInterpolationModeNearestNeighbor });
 
     BITMAPINFO bminfo = {};
     bminfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -286,9 +297,7 @@ void Image::RenderFrame(HDC hDC, UINT x, UINT y, UINT cx, UINT cy) const
     bminfo.bmiHeader.biCompression = BI_RGB;
 
     void* pvImageBits = nullptr;	// Freed with DeleteObject(hDIBBitmap)
-    CBitmap hDIBBitmap = CreateDIBSection(hdcScreen, &bminfo, DIB_RGB_COLORS, &pvImageBits, NULL, 0);
-
-    ReleaseDC(NULL, hdcScreen);
+    CBitmap hDIBBitmap = CreateDIBSection(NULL, &bminfo, DIB_RGB_COLORS, &pvImageBits, NULL, 0);
 
     if (!hDIBBitmap)
         throw CAtlException(2);
@@ -299,33 +308,24 @@ void Image::RenderFrame(HDC hDC, UINT x, UINT y, UINT cx, UINT cy) const
 
     if (bAlpha)
     {
-        CDC hMemDC;
-        hMemDC.CreateCompatibleDC(hDC);
-        HBITMAP hOrgBMP = hMemDC.SelectBitmap(hDIBBitmap);
+        if (hBackground != NULL)
+        {
+            SetBrushOrgEx(hDC, p[0].x + cx / 2 + 1, p[0].y + cy / 2 + 1, nullptr);
+            const RECT r = { 0, 0, cx, cy };
+            FillRect(hDC, &r, hBackground);
+        }
+
         BLENDFUNCTION bf{ AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-        ::AlphaBlend(hDC, x, y, cx, cy, hMemDC, 0, 0, cx, cy, bf);
-        hMemDC.SelectBitmap(hOrgBMP);
+        ::AlphaBlend(hDC, x, y, cx, cy, hDIBBitmap, bf);
     }
     else
         ::SetDIBitsToDevice(hDC, x, y, cx, cy, 0, 0, 0, cy, pvImageBits, &bminfo, DIB_RGB_COLORS);
 }
 
-HBITMAP Image::ConvertToBitmap(HBRUSH hBackground) const
+HBITMAP Image::ConvertToBitmap(HDC hDC, HBRUSH hBackground) const
 {
     const Size nSize = GetFrameSize();
-
-    CClientDC hDC(NULL);
-    CDC hMemDC;
-    hMemDC.CreateCompatibleDC(hDC);
-    CBitmap hMemBmp;
-    hMemBmp.CreateCompatibleBitmap(hDC, nSize.nWidth, nSize.nHeight);
-
-    HBITMAP hOrgBMP = hMemDC.SelectBitmap(hMemBmp);
-    const RECT r = { 0, 0, (LONG) nSize.nWidth, (LONG) nSize.nHeight };
-    hMemDC.SetBrushOrg(POINT({ (LONG) nSize.nWidth / 2, (LONG) nSize.nHeight / 2 }));
-    hMemDC.FillRect(&r, hBackground);
-    RenderFrame(hMemDC, 0, 0, nSize.nWidth, nSize.nHeight);
-    hMemDC.SelectBitmap(hOrgBMP);
-
-    return hMemBmp.Detach();
+    CBitmapDC hBmpDC(hDC, nSize.nWidth, nSize.nHeight);
+    RenderFrame(hBmpDC, 0, 0, nSize.nWidth, nSize.nHeight, hBackground);
+    return hBmpDC.m_bmp.Detach();
 }

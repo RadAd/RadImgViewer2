@@ -22,22 +22,12 @@ BOOL CBitmapView::PreTranslateMessage(MSG* /*pMsg*/)
 void CBitmapView::ClearBitmap(bool bResetOffset)
 {
     m_image.Clear();
-
-    if (!m_bmp.IsNull())
-        m_bmp.DeleteObject();
-
     UpdateScrollSize(bResetOffset);
 }
 
 void CBitmapView::SetBitmap(Image image, bool bResetOffset)
 {
     m_image = image;
-
-    if (m_image.IsLoaded())
-        m_bmp = m_image.ConvertToBitmap(m_hBackground);
-    else if (!m_bmp.IsNull())
-        m_bmp.DeleteObject();
-
     UpdateScrollSize(bResetOffset);
 }
 
@@ -45,10 +35,7 @@ void CBitmapView::SetBackground(HBRUSH hBackground)
 {
     m_hBackground = hBackground;
     if (m_image.IsLoaded())
-    {
-        m_bmp = m_image.ConvertToBitmap(m_hBackground);
         InvalidateRect(nullptr, FALSE);
-    }
 }
 
 void CBitmapView::SetFrame(UINT nFrame)
@@ -61,12 +48,6 @@ void CBitmapView::SetFrame(UINT nFrame)
 void CBitmapView::SetFlipRotate(WICBitmapTransformOptions FlipRotate)
 {
     m_image.m_FlipRotate = FlipRotate;
-
-    if (m_image.IsLoaded())
-        m_bmp = m_image.ConvertToBitmap(m_hBackground);
-    else if (!m_bmp.IsNull())
-        m_bmp.DeleteObject();
-
     UpdateScrollSize(true);
 }
 
@@ -89,8 +70,12 @@ void CBitmapView::InvalidateCursor()
 void CBitmapView::UpdateScrollSize(bool bResetOffset)
 {
     SIZE size;
-    if (!m_bmp.IsNull())
-        m_bmp.GetSize(size);
+    if (m_image.IsLoaded())
+    {
+        Image::Size framesize = m_image.GetFrameSize();
+        size.cx = framesize.nWidth;
+        size.cy = framesize.nHeight;
+    }
     else
         size.cx = size.cy = 1;
 
@@ -218,13 +203,28 @@ void CBitmapView::OnKeyUp(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CBitmapView::DoPaint(CDCHandle dc) const
 {
-    if (!m_bmp.IsNull())
+    if (m_image.IsLoaded())
     {
-        CDC dcMem;
-        dcMem.CreateCompatibleDC(dc);
-        HBITMAP hBmpOld = dcMem.SelectBitmap(m_bmp);
-        dc.BitBlt(0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, dcMem, 0, 0, SRCCOPY);
-        dcMem.SelectBitmap(hBmpOld);
+        // TODO DoubleBuffer seems to corrupt colours
+        const BOOL bUseDoubleBuffer = FALSE;
+        if (bUseDoubleBuffer)
+        {
+#if 1
+            CMemoryDC hMemDC(dc, { 0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy });
+            m_image.RenderFrame(hMemDC, hMemDC.m_rcPaint.left, hMemDC.m_rcPaint.top, hMemDC.m_rcPaint.right - hMemDC.m_rcPaint.left, hMemDC.m_rcPaint.bottom - hMemDC.m_rcPaint.top, m_hBackground);
+#else
+            CDC hMemDC;
+            hMemDC.CreateCompatibleDC(dc);
+            CBitmap hMemBmp;
+            hMemBmp.CreateCompatibleBitmap(dc, m_sizeLogAll.cx, m_sizeLogAll.cy);
+            HBITMAP hOrgBMP = hMemDC.SelectBitmap(hMemBmp);
+            m_image.RenderFrame(hMemDC, 0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, m_hBackground);
+            dc.BitBlt(0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, hMemDC, 0, 0, SRCCOPY);
+            hMemDC.SelectBitmap(hOrgBMP);
+#endif
+        }
+        else
+            m_image.RenderFrame(dc, 0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, m_hBackground);
     }
 
     if (m_bTracking)

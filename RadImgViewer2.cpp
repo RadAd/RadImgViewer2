@@ -44,6 +44,8 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow)
 {
+    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
     INITCOMMONCONTROLSEX iccx;
     iccx.dwSize = sizeof(iccx);
     iccx.dwICC = ICC_COOL_CLASSES | ICC_BAR_CLASSES;

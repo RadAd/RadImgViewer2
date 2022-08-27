@@ -310,7 +310,7 @@ bool CMainFrame::PrintPage(UINT nPage, HDC hDC)
 
     CDCHandle dc = hDC;
     //dc.Rectangle(&rcPage);
-    m_view.GetImage().RenderFrame(dc, xOff, yOff, cxBlt, cyBlt);
+    m_view.GetImage().RenderFrame(dc, xOff, yOff, cxBlt, cyBlt, NULL);
 
     return true;
 }
@@ -636,7 +636,8 @@ void CMainFrame::OnEditCopy(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
     if (::OpenClipboard(NULL))
     {
-        HBITMAP hBitmapCopy = m_view.CreateBitmap();
+        CClientDC hDC(NULL);
+        HBITMAP hBitmapCopy = m_view.CreateBitmap(hDC);
         if (hBitmapCopy != NULL)
             ::SetClipboardData(CF_BITMAP, hBitmapCopy);
         else
@@ -795,23 +796,18 @@ void CMainFrame::OnBackground(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/)
     case ID_BACKGROUND_CHECKERED:
         {
             CRect r(0, 0, 10, 10);
-            CSize sz(r.Width(), r.Height());
+            const CSize sz = r.Size();
             CClientDC hDC(NULL);
-            CDC hMemDC;
-            hMemDC.CreateCompatibleDC(hDC);
-            CBitmap hMemBmp;
-            hMemBmp.CreateCompatibleBitmap(hDC, sz.cx * 2, sz.cy * 2);
-            HBITMAP hOrgBMP = hMemDC.SelectBitmap(hMemBmp);
+            CBitmapDC hBmpDC(hDC, sz.cx * 2, sz.cy * 2);
             for (int y = 0; y < 2; ++y)
             {
                 for (int x = 0; x < 2; ++x)
                 {
                     r.MoveToXY(sz.cx * x, sz.cy * y);
-                    hMemDC.FillRect(r, (HBRUSH) GetStockObject(((x + y) % 2) == 0 ? LTGRAY_BRUSH : GRAY_BRUSH));
+                    hBmpDC.FillRect(r, (HBRUSH) GetStockObject(((x + y) % 2) == 0 ? LTGRAY_BRUSH : GRAY_BRUSH));
                 }
             }
-            hMemDC.SelectBitmap(hOrgBMP);
-            m_view.SetBackground(CreatePatternBrush(hMemBmp));
+            m_view.SetBackground(CreatePatternBrush(hBmpDC.m_bmp));
         }
         break;
     }

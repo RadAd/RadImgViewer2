@@ -284,7 +284,7 @@ void Image::RenderFrame(HDC hDC, int x, int y, int cx, int cy, HBRUSH hBackgroun
     IfFailedThrowHR(pFactory.CoCreateInstance(CLSID_WICImagingFactory))
 
     CComPtr<IWICBitmapSource> pBitmap = m_pBitmap[m_nFrame]
-        | FormatConverter({ pFactory, bAlpha ? GUID_WICPixelFormat32bppPRGBA : GUID_WICPixelFormat32bppRGB })
+        | FormatConverter({ pFactory, bAlpha ? GUID_WICPixelFormat32bppPBGRA : GUID_WICPixelFormat32bppBGR })
         | FlipRotator({ pFactory, m_FlipRotate })
         | Scaler({ pFactory, (UINT) cx, (UINT) cy, WICBitmapInterpolationModeNearestNeighbor });
 
@@ -310,9 +310,9 @@ void Image::RenderFrame(HDC hDC, int x, int y, int cx, int cy, HBRUSH hBackgroun
     {
         if (hBackground != NULL)
         {
-            SetBrushOrgEx(hDC, p[0].x + cx / 2 + 1, p[0].y + cy / 2 + 1, nullptr);
-            const RECT r = { 0, 0, cx, cy };
-            FillRect(hDC, &r, hBackground);
+            CMemoryDC hMemDC(hDC, { 0, 0, cx, cy }); // Necessary as FillRect brush doesn't respect mapping mode
+            hMemDC.SetBrushOrg(cx / 2 + 1, cy / 2 + 1);
+            hMemDC.FillRect(&hMemDC.m_rcPaint, hBackground);
         }
 
         BLENDFUNCTION bf{ AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };

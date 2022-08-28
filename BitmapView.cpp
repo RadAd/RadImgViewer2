@@ -19,10 +19,10 @@ BOOL CBitmapView::PreTranslateMessage(MSG* /*pMsg*/)
     return FALSE;
 }
 
-void CBitmapView::ClearBitmap(bool bResetOffset)
+void CBitmapView::ClearBitmap()
 {
     m_image.Clear();
-    UpdateScrollSize(bResetOffset);
+    UpdateScrollSize(true);
 }
 
 void CBitmapView::SetBitmap(Image image, bool bResetOffset)
@@ -43,7 +43,7 @@ void CBitmapView::SetFrame(UINT nFrame)
     m_image.SetFrame(nFrame);
     const Image::Size framesize = m_image.GetFrameSize();
     SetZoomScale((float) m_sizeAll.cx / framesize.nWidth);
-    UpdateScrollSize(FALSE);
+    UpdateScrollSize(false);
 }
 
 void CBitmapView::SetFlipRotate(WICBitmapTransformOptions FlipRotate)

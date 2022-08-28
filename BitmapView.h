@@ -19,7 +19,7 @@ public:
     CBitmapView();
 
     BOOL PreTranslateMessage(MSG* pMsg);
-    void ClearBitmap(bool bResetOffset = true);
+    void ClearBitmap();
     void SetBitmap(Image image, bool bResetOffset = true);
     const Image& GetImage() const { return m_image; }
     void SetBackground(HBRUSH hBackground);

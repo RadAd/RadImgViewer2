@@ -41,8 +41,9 @@ void CBitmapView::SetBackground(HBRUSH hBackground)
 void CBitmapView::SetFrame(UINT nFrame)
 {
     m_image.SetFrame(nFrame);
-    // TODO Update scroll size?
-    InvalidateRect(nullptr, FALSE);
+    const Image::Size framesize = m_image.GetFrameSize();
+    SetZoomScale((float) m_sizeAll.cx / framesize.nWidth);
+    UpdateScrollSize(FALSE);
 }
 
 void CBitmapView::SetFlipRotate(WICBitmapTransformOptions FlipRotate)
@@ -91,8 +92,7 @@ BOOL CBitmapView::OnEraseBackground(CDCHandle dc)
     GetClientRect(&rect);
     const int Color = COLOR_APPWORKSPACE;
 
-    RECT rc = { 0, 0, this->m_sizeAll.cx, this->m_sizeAll.cy };
-    ::OffsetRect(&rc, -this->m_ptOffset.x, -this->m_ptOffset.y);
+    const CRect rc(-CPoint(m_ptOffset), m_sizeAll);
 
     if (rect.top < rc.top)
     {
@@ -123,7 +123,7 @@ BOOL CBitmapView::OnEraseBackground(CDCHandle dc)
         dc.FillRect(&rectRight, Color);
     }
 
-    dc.FillRect(&rect, Color);
+    //dc.FillRect(&rect, Color);
 
     return FALSE;
 }
@@ -205,26 +205,10 @@ void CBitmapView::DoPaint(CDCHandle dc) const
 {
     if (m_image.IsLoaded())
     {
-        // TODO DoubleBuffer seems to corrupt colours
-        const BOOL bUseDoubleBuffer = FALSE;
-        if (bUseDoubleBuffer)
-        {
-#if 1
-            CMemoryDC hMemDC(dc, { 0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy });
-            m_image.RenderFrame(hMemDC, hMemDC.m_rcPaint.left, hMemDC.m_rcPaint.top, hMemDC.m_rcPaint.right - hMemDC.m_rcPaint.left, hMemDC.m_rcPaint.bottom - hMemDC.m_rcPaint.top, m_hBackground);
-#else
-            CDC hMemDC;
-            hMemDC.CreateCompatibleDC(dc);
-            CBitmap hMemBmp;
-            hMemBmp.CreateCompatibleBitmap(dc, m_sizeLogAll.cx, m_sizeLogAll.cy);
-            HBITMAP hOrgBMP = hMemDC.SelectBitmap(hMemBmp);
-            m_image.RenderFrame(hMemDC, 0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, m_hBackground);
-            dc.BitBlt(0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, hMemDC, 0, 0, SRCCOPY);
-            hMemDC.SelectBitmap(hOrgBMP);
-#endif
-        }
-        else
-            m_image.RenderFrame(dc, 0, 0, m_sizeLogAll.cx, m_sizeLogAll.cy, m_hBackground);
+        const int mm = dc.SetMapMode(MM_TEXT);
+        CMemoryDC hMemDC(dc, CRect({ 0, 0 }, m_sizeAll));
+        m_image.RenderFrame(hMemDC, hMemDC.m_rcPaint.left, hMemDC.m_rcPaint.top, hMemDC.m_rcPaint.right - hMemDC.m_rcPaint.left, hMemDC.m_rcPaint.bottom - hMemDC.m_rcPaint.top, m_hBackground);
+        dc.SetMapMode(mm);
     }
 
     if (m_bTracking)

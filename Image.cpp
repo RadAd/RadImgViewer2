@@ -310,9 +310,11 @@ void Image::RenderFrame(HDC hDC, int x, int y, int cx, int cy, HBRUSH hBackgroun
     {
         if (hBackground != NULL)
         {
-            CMemoryDC hMemDC(hDC, { 0, 0, cx, cy }); // Necessary as FillRect brush doesn't respect mapping mode
-            hMemDC.SetBrushOrg(cx / 2 + 1, cy / 2 + 1);
-            hMemDC.FillRect(&hMemDC.m_rcPaint, hBackground);
+            const Size sz = GetFrameSize();
+            CBitmapDC hMemDC(hDC, sz.nWidth, sz.nHeight); // Necessary as FillRect brush doesn't respect mapping mode
+            hMemDC.SetBrushOrg(sz.nWidth / 2, sz.nHeight / 2);
+            hMemDC.FillRect(&RECT({ 0, 0, (LONG) sz.nWidth, (LONG) sz.nHeight }), hBackground);
+            StretchBlt(hDC, 0, 0, cx, cy, hMemDC, 0, 0, sz.nWidth, sz.nHeight, SRCCOPY);
         }
 
         BLENDFUNCTION bf{ AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };

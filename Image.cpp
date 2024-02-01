@@ -98,6 +98,7 @@ std::wstring GetFilter(WICComponentType type)
             pCodecInfo->GetFriendlyName(cbBuffer, strFriendlyName.GetBufferSetLength(cbBuffer), &cbActual);
             strFriendlyName.ReleaseBufferSetLength(cbActual);
             strFriendlyName.Replace(L"Decoder", L"Files");
+            strFriendlyName.Replace(L"Encoder", L"Files");
             // File extensions
             pCodecInfo->GetFileExtensions(cbBuffer, strFileExtensions.GetBufferSetLength(cbBuffer), &cbActual);
             strFileExtensions.ReleaseBufferSetLength(cbActual);

@@ -19,7 +19,7 @@
 // Check out L"/grctlext/Disposal" in  https://github.com/microsoft/Windows-classic-samples/blob/master/Samples/Win7Samples/multimedia/wic/wicanimatedgif/WicAnimatedGif.cpp
 
 #define FILE_MENU_POSITION	0
-#define RECENT_MENU_POSITION	6
+#define RECENT_MENU_POSITION	7
 #define POPUP_MENU_POSITION	0
 
 #define TIMER_RELOAD 15
@@ -383,6 +383,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT /*lpCreateStruct*/)
     m_view.ClearBitmap();
     m_view.SetFocus();
 
+    _ASSERT(m_CmdBar.GetMenu().GetSubMenu(FILE_MENU_POSITION).GetSubMenu(RECENT_MENU_POSITION));
     m_mru.SetMenuHandle(m_CmdBar.GetMenu().GetSubMenu(FILE_MENU_POSITION).GetSubMenu(RECENT_MENU_POSITION));
     m_mru.SetMaxEntries(12);
     m_mru.ReadFromRegistry(g_lpcstrMRURegKey);

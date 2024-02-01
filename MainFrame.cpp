@@ -89,6 +89,7 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
 BOOL CMainFrame::OnIdle()
 {
     BOOL bEnable = m_view.GetImage().IsLoaded();
+    UIEnable(ID_FILE_SAVE_AS, bEnable);
     UIEnable(ID_FILE_PRINT, bEnable);
     UIEnable(ID_FILE_PRINT_PREVIEW, bEnable);
     UISetCheck(ID_FILE_PRINT_PREVIEW, m_bPrintPreview);
@@ -387,6 +388,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT /*lpCreateStruct*/)
     m_mru.SetMenuHandle(m_CmdBar.GetMenu().GetSubMenu(FILE_MENU_POSITION).GetSubMenu(RECENT_MENU_POSITION));
     m_mru.SetMaxEntries(12);
     m_mru.ReadFromRegistry(g_lpcstrMRURegKey);
+    UIAddMenu(m_CmdBar.GetMenu());
 
     for (int i = 0; i < ARRAYSIZE(idToolbars); ++i)
         UIAddToolBar(hWndToolBar[i]);

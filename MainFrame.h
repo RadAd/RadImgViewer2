@@ -14,7 +14,7 @@
 
 #include "resource.h"
 
-class CMainFrame : public CFrameWindowImpl<CMainFrame>, public CUpdateUI<CMainFrame>,
+class CMainFrame : public CFrameWindowImpl<CMainFrame>, public CAutoUpdateUI<CMainFrame>,
     public CMessageFilter, public CIdleHandler, public CPrintJobInfo
 {
 public:
@@ -79,7 +79,7 @@ private:
 
         NOTIFY_HANDLER_EX(0, ZSN_ZOOMCHANGED, OnZoomChanged)
 
-        CHAIN_MSG_MAP(CUpdateUI<CMainFrame>)
+        CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
         CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
     END_MSG_MAP()
 

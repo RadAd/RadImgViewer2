@@ -656,39 +656,36 @@ void CMainFrame::OnEditPaste(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
     if (m_bPrintPreview)
         TogglePrintPreview();
 
-    if (::OpenClipboard(NULL))
+    Image image;
+
+    if (::OpenClipboard(*this))
     {
         HBITMAP hBitmap = (HBITMAP)::GetClipboardData(CF_BITMAP);
-        ::CloseClipboard();
         if (hBitmap != NULL)
         {
             HPALETTE hPalette = NULL;
-            Image image;
             image.CreateFrom(hBitmap, hPalette);
-            if (image.IsLoaded())
-            {
-                m_view.SetBitmap(image);
-                UpdateTitleBar(_T("(Clipboard)"));
-                m_szFilePath[0] = _T('\0');
-                m_FileTime = {};
-                UpdateStatusBar();
-                KillTimer(TIMER_RELOAD);
-                KillTimer(TIMER_PLAY);
-            }
-            else
-            {
-                m_view.ClearBitmap();
-                MessageError(_T("Can't paste bitmap"));
-            }
         }
-        else
-        {
-            MessageError(_T("Can't open bitmap from the clipboard"));
-        }
+        ::CloseClipboard();
     }
     else
     {
         MessageError(_T("Can't open clipboard to paste"));
+    }
+
+    if (image.IsLoaded())
+    {
+        m_view.SetBitmap(image);
+        UpdateTitleBar(_T("(Clipboard)"));
+        m_szFilePath[0] = _T('\0');
+        m_FileTime = {};
+        UpdateStatusBar();
+        KillTimer(TIMER_RELOAD);
+        KillTimer(TIMER_PLAY);
+    }
+    else
+    {
+        MessageError(_T("Can't paste bitmap"));
     }
 }
 

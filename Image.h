@@ -4,7 +4,7 @@
 #include <vector>
 #include <wincodec.h>
 
-std::wstring GetDecoderFilter();
+std::wstring GetFilter(WICComponentType type);
 UINT GetBitsPerPixel(WICPixelFormatGUID pixelFormat);
 
 class Image
@@ -29,6 +29,7 @@ public:
     }
     BOOL IsLoaded() const { return !m_pBitmap.empty();  }
     void Load(LPCTSTR lpFilename);
+    void Save(LPCTSTR lpFilename) const;
     void CreateFrom(HBITMAP hBitmap, HPALETTE hPalette);
     const std::wstring& GetType() const { return m_type; }
     UINT GetFrameCount() const { return (UINT) m_pBitmap.size(); }

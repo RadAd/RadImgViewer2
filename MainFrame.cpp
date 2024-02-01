@@ -10,6 +10,7 @@
 #include "ImageProps.h"
 #include "RegSettings.h"
 #include "Utils.h"
+#include "StrUtils.h"
 
 // TODO
 // Toggle button for auto-update
@@ -152,7 +153,41 @@ BOOL CMainFrame::LoadImage(LPCTSTR lpFilename, LPCTSTR lpName)
         else
             return FALSE;
     }
-    catch (const CAtlException)
+    catch (const CAtlException&)
+    {
+        statusBar.SetText(0, _T(""), SBT_NOBORDERS);
+        SetCursor(OldCursor);
+        return FALSE;
+    }
+}
+
+BOOL CMainFrame::SaveImage(LPCTSTR lpFilename, LPCTSTR lpName)
+{
+    if (lpName == nullptr)
+    {
+        const int nFileNamePos = StrRevFind(lpFilename, _T('\\')) + 1;
+        lpName = lpFilename + nFileNamePos;
+    }
+
+    HCURSOR OldCursor = SetCursor(LoadCursor(NULL, IDC_WAIT));
+    CStatusBarCtrl statusBar(m_hWndStatusBar);
+    try
+    {
+        statusBar.SetText(0, _T("Saving..."), SBT_NOBORDERS);
+
+        m_view.SaveImage(lpFilename);
+
+        UpdateTitleBar(lpName);
+        lstrcpy(m_szFilePath, lpFilename);
+        m_FileTime = GetFileWriteTime(m_szFilePath);
+        UpdateStatusBar();
+
+        statusBar.SetText(0, _T(""), SBT_NOBORDERS);
+        SetCursor(OldCursor);
+
+        return TRUE;
+    }
+    catch (const CAtlException&)
     {
         statusBar.SetText(0, _T(""), SBT_NOBORDERS);
         SetCursor(OldCursor);
@@ -516,7 +551,7 @@ void CMainFrame::OnFileExit(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 
 void CMainFrame::OnFileOpen(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
 {
-    const std::wstring filter(GetDecoderFilter());
+    const std::wstring filter(GetFilter(WICDecoder));
     CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, filter.c_str(), m_hWnd);
     TCHAR strInitialDir[MAX_PATH];
     lstrcpy(strInitialDir, m_szFilePath);
@@ -540,6 +575,31 @@ void CMainFrame::OnFileOpen(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
         else
         {
             CString strMsg = _T("Can't load image from:\n");
+            strMsg += dlg.m_szFileName;
+            MessageError(strMsg);
+        }
+    }
+}
+
+void CMainFrame::OnFileSaveAs(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/)
+{
+    const std::wstring filter(GetFilter(WICEncoder));
+    CFileDialog dlg(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_EXTENSIONDIFFERENT, filter.c_str(), m_hWnd);
+    TCHAR strInitialDir[MAX_PATH];
+    lstrcpy(strInitialDir, m_szFilePath);
+    {
+        TCHAR* e = wcsrchr(strInitialDir, _T('\\'));
+        if (e != nullptr)
+            *e = _T('\0');
+    }
+
+    dlg.m_ofn.lpstrInitialDir = strInitialDir;
+    dlg.m_ofn.lpstrDefExt = _T("");
+    if (dlg.DoModal() == IDOK)
+    {
+        if (!SaveImage(dlg.m_szFileName, dlg.m_szFileTitle))
+        {
+            CString strMsg = _T("Can't save image to:\n");
             strMsg += dlg.m_szFileName;
             MessageError(strMsg);
         }

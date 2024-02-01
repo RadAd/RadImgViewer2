@@ -30,6 +30,9 @@ public:
     HBITMAP CreateBitmap(HDC hDC) const { return m_image.ConvertToBitmap(hDC, m_hBackground); }
 
     void ZoomToFit();
+
+    void SaveImage(LPCTSTR lpFilename) const { m_image.Save(lpFilename); }
+
 private:
     void DoPaint(CDCHandle dc) const;
 

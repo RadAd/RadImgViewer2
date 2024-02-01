@@ -25,6 +25,7 @@ public:
     CMainFrame();
 
     BOOL LoadImage(LPCTSTR lpFilename, LPCTSTR lpName);
+    BOOL SaveImage(LPCTSTR lpFilename, LPCTSTR lpName);
 
 private:
     virtual BOOL PreTranslateMessage(MSG* pMsg) override;
@@ -52,6 +53,7 @@ private:
         MESSAGE_HANDLER(WM_CLIPBOARDUPDATE, OnClipboardUpdate)
 
         COMMAND_ID_HANDLER_EX(ID_FILE_OPEN, OnFileOpen)
+        COMMAND_ID_HANDLER_EX(ID_FILE_SAVE_AS, OnFileSaveAs)
         COMMAND_RANGE_HANDLER_EX(ID_FILE_MRU_FIRST, ID_FILE_MRU_LAST, OnFileRecent)
         COMMAND_ID_HANDLER_EX(ID_FILE_PRINT, OnFilePrint);
         COMMAND_ID_HANDLER_EX(ID_FILE_PAGE_SETUP, OnFilePageSetup)
@@ -136,6 +138,7 @@ private:
 
     void OnFileExit(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/);
     void OnFileOpen(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/);
+    void OnFileSaveAs(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/);
     void OnFileRecent(UINT /*uNotifyCode*/, int nID, CWindow /*wnd*/);
     void OnFilePrint(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/);
     void OnFilePageSetup(UINT /*uNotifyCode*/, int /*nID*/, CWindow /*wnd*/);

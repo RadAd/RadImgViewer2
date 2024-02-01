@@ -2,6 +2,7 @@
 
 #include "Image.h"
 #include "Utils.h"
+#include "StrUtils.h"
 
 #include <atlstr.h>
 
@@ -70,7 +71,7 @@ CComPtr<IWICBitmapScaler> operator|(IWICBitmapSource* pISource, const Scaler& s)
     return pScaler;
 }
 
-std::wstring GetDecoderFilter()
+std::wstring GetFilter(WICComponentType type)
 {
     CComPtr<IWICImagingFactory> pFactory;
     if (FAILED(pFactory.CoCreateInstance(CLSID_WICImagingFactory)))
@@ -80,7 +81,7 @@ std::wstring GetDecoderFilter()
     std::wstring filter;
 
     CComPtr<IEnumUnknown> pEnum;
-    if (SUCCEEDED(pFactory->CreateComponentEnumerator(WICDecoder, WICComponentEnumerateDefault, &pEnum)))
+    if (SUCCEEDED(pFactory->CreateComponentEnumerator(type, WICComponentEnumerateDefault, &pEnum)))
     {
         const UINT cbBuffer = 256; // if not enough will be truncated
         ULONG cbElement = 0;
@@ -117,8 +118,11 @@ std::wstring GetDecoderFilter()
             pElement = NULL;
         }
     }
-    filter = L"All Image Files(" + allfilter + L") |" + allfilter + L"|" + filter;
-    filter += L"All Files (*.*)|* .*|";
+    if (type == WICDecoder)
+    {
+        filter = L"All Image Files(" + allfilter + L") |" + allfilter + L"|" + filter;
+        filter += L"All Files (*.*)|* .*|";
+    }
     for (auto& c : filter)
     {
         if (c == L'|')
@@ -126,6 +130,47 @@ std::wstring GetDecoderFilter()
     }
 
     return filter;
+}
+
+GUID EnumCodecsFindExtension(IWICImagingFactory* pImagingFactory, WICComponentType type, const CString& strExt)
+{
+    ATLASSERT(pImagingFactory);
+    ATLASSERT((type == WICDecoder) || (type == WICEncoder));
+
+    CComPtr<IEnumUnknown> pEnum;
+    DWORD dwOptions = WICComponentEnumerateDefault;
+    IfFailedThrowHR(pImagingFactory->CreateComponentEnumerator(type, dwOptions, &pEnum));
+
+    const UINT cbBuffer = 256; // if not enough will be truncated
+    ULONG cbFetched = 0;
+    CComPtr<IUnknown> pElement = NULL;
+    while (S_OK == pEnum->Next(1, &pElement, &cbFetched))
+    {
+        UINT cbActual = 0;
+        CComQIPtr<IWICBitmapCodecInfo> pCodecInfo(pElement);
+#if 0   // Codec name
+        CString strFriendlyName;
+        IfFailedThrowHR(pCodecInfo->GetFriendlyName(cbBuffer, strFriendlyName.GetBufferSetLength(cbBuffer), &cbActual));
+        strFriendlyName.ReleaseBufferSetLength(cbActual);
+#endif
+        // File extensions
+        CString strFileExtensions;
+        IfFailedThrowHR(pCodecInfo->GetFileExtensions(cbBuffer, strFileExtensions.GetBufferSetLength(cbBuffer), &cbActual));
+        strFileExtensions.ReleaseBufferSetLength(cbActual);
+
+        CAtlArray<CString> arrStringArray;
+        SplitString(strFileExtensions, _T(","), arrStringArray);
+        if (Find(arrStringArray, strExt) != SIZE_T_MAX)
+        {
+            GUID guid;
+            IfFailedThrowHR(pCodecInfo->GetContainerFormat(&guid));
+            return guid;
+        }
+
+        pElement = NULL;
+    }
+
+    return {};
 }
 
 UINT GetBitsPerPixel(WICPixelFormatGUID pixelFormat)
@@ -201,6 +246,41 @@ void Image::Load(LPCTSTR lpFilename)
         m_pBitmap.emplace_back(pBitmap);
         m_delay.push_back(uFrameDelay);
     }
+}
+
+void Image::Save(LPCTSTR lpFilename) const
+{
+    CComPtr<IWICImagingFactory> pFactory;
+    IfFailedThrowHR(pFactory.CoCreateInstance(CLSID_WICImagingFactory));
+
+    const CString strExt = PathFindExtension(lpFilename);
+    const CLSID clsidEncoder = EnumCodecsFindExtension(pFactory, WICEncoder, strExt);
+
+    CComPtr<IWICBitmapEncoder> pEncoder;
+    IfFailedThrowHR(pFactory->CreateEncoder(clsidEncoder, NULL, &pEncoder));
+
+    CComPtr<IWICStream> pStream;
+    IfFailedThrowHR(pFactory->CreateStream(&pStream));
+
+    IfFailedThrowHR(pStream->InitializeFromFilename(lpFilename, GENERIC_WRITE));
+
+    IfFailedThrowHR(pEncoder->Initialize(pStream, WICBitmapEncoderNoCache));
+
+    for (IWICBitmapSource* pSource : m_pBitmap)
+    {
+        CComPtr<IWICBitmapFrameEncode> pFrame;
+        CComPtr<IPropertyBag2> pProp;
+
+        IfFailedThrowHR(pEncoder->CreateNewFrame(&pFrame, &pProp))
+
+        IfFailedThrowHR(pFrame->Initialize(pProp));
+
+        IfFailedThrowHR(pFrame->WriteSource(pSource, nullptr));
+
+        IfFailedThrowHR(pFrame->Commit());
+    }
+
+    IfFailedThrowHR(pEncoder->Commit());
 }
 
 void Image::CreateFrom(HBITMAP hBitmap, HPALETTE hPalette)
